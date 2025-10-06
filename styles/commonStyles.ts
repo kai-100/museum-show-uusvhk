@@ -1,89 +1,122 @@
+
 import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
 
 export const colors = {
-  primary: '#162456',    // Material Blue
-  secondary: '#193cb8',  // Darker Blue
-  accent: '#64B5F6',     // Light Blue
-  background: '#101824',  // Keeping dark background
-  backgroundAlt: '#162133',  // Keeping dark background
-  text: '#e3e3e3',       // Keeping light text
-  grey: '#90CAF9',       // Light Blue Grey
-  card: '#193cb8',       // Keeping dark card background
+  background: '#000000',        // Black
+  text: '#00FF00',             // Green Hacker Font
+  textSecondary: '#A9A9A9',    // Dark Gray
+  primary: '#32CD32',          // Lime Green
+  secondary: '#2E8B57',        // Sea Green
+  accent: '#ADFF2F',           // Green Yellow
+  card: '#121212',             // Dark Charcoal
+  highlight: '#00FA9A',        // Medium Spring Green
 };
 
 export const buttonStyles = StyleSheet.create({
-  instructionsButton: {
+  primary: {
     backgroundColor: colors.primary,
-    alignSelf: 'center',
-    width: '100%',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  backButton: {
-    backgroundColor: colors.backgroundAlt,
-    alignSelf: 'center',
-    width: '100%',
+  secondary: {
+    backgroundColor: colors.secondary,
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  accent: {
+    backgroundColor: colors.accent,
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 
 export const commonStyles = StyleSheet.create({
-  wrapper: {
-    backgroundColor: colors.background,
-    width: '100%',
-    height: '100%',
-  },
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   content: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    maxWidth: 800,
-    width: '100%',
+    padding: 20,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '800',
-    textAlign: 'center',
+    fontSize: 28,
+    fontWeight: 'bold',
     color: colors.text,
-    marginBottom: 10
+    textAlign: 'center',
+    marginBottom: 20,
+    fontFamily: 'monospace',
+  },
+  subtitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.primary,
+    textAlign: 'center',
+    marginBottom: 15,
+    fontFamily: 'monospace',
   },
   text: {
     fontSize: 16,
-    fontWeight: '500',
     color: colors.text,
-    marginBottom: 8,
     lineHeight: 24,
-    textAlign: 'center',
+    fontFamily: 'monospace',
   },
-  section: {
-    width: '100%',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  buttonContainer: {
-    width: '100%',
-    alignItems: 'center',
-    paddingHorizontal: 20,
+  textSecondary: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    lineHeight: 20,
+    fontFamily: 'monospace',
   },
   card: {
-    backgroundColor: colors.backgroundAlt,
-    borderColor: colors.grey,
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 10,
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
     marginVertical: 8,
-    width: '100%',
-    boxShadow: '0px 2px 3px rgba(0, 0, 0, 0.1)',
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    boxShadow: '0px 4px 8px rgba(0, 255, 0, 0.2)',
+    elevation: 4,
   },
-  icon: {
-    width: 60,
-    height: 60,
-    tintColor: "white",
+  button: {
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 8,
+  },
+  buttonText: {
+    color: colors.background,
+    fontSize: 16,
+    fontWeight: 'bold',
+    fontFamily: 'monospace',
+  },
+  input: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: 8,
+    padding: 12,
+    color: colors.text,
+    fontSize: 16,
+    fontFamily: 'monospace',
+    marginVertical: 8,
+  },
+  headerButton: {
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.primary,
   },
 });

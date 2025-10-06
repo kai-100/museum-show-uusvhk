@@ -1,3 +1,4 @@
+
 import "react-native-reanimated";
 import React, { useEffect } from "react";
 import { useFonts } from "expo-font";
@@ -16,6 +17,7 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { Button } from "@/components/button";
 import { WidgetProvider } from "@/contexts/WidgetContext";
+import { colors } from "@/styles/commonStyles";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -53,38 +55,25 @@ export default function RootLayout() {
     return null;
   }
 
-  const CustomDefaultTheme: Theme = {
-    ...DefaultTheme,
-    dark: false,
+  // Museum Show Custom Theme (Hacker Style)
+  const MuseumShowTheme: Theme = {
+    dark: true,
     colors: {
-      primary: "rgb(0, 122, 255)", // System Blue
-      background: "rgb(242, 242, 247)", // Light mode background
-      card: "rgb(255, 255, 255)", // White cards/surfaces
-      text: "rgb(0, 0, 0)", // Black text for light mode
-      border: "rgb(216, 216, 220)", // Light gray for separators/borders
-      notification: "rgb(255, 59, 48)", // System Red
+      primary: colors.primary,        // Lime Green
+      background: colors.background,  // Black
+      card: colors.card,             // Dark Charcoal
+      text: colors.text,             // Green Hacker Font
+      border: colors.primary,        // Lime Green borders
+      notification: colors.accent,   // Green Yellow
     },
   };
 
-  const CustomDarkTheme: Theme = {
-    ...DarkTheme,
-    colors: {
-      primary: "rgb(10, 132, 255)", // System Blue (Dark Mode)
-      background: "rgb(1, 1, 1)", // True black background for OLED displays
-      card: "rgb(28, 28, 30)", // Dark card/surface color
-      text: "rgb(255, 255, 255)", // White text for dark mode
-      border: "rgb(44, 44, 46)", // Dark gray for separators/borders
-      notification: "rgb(255, 69, 58)", // System Red (Dark Mode)
-    },
-  };
   return (
     <>
-      <StatusBar style="auto" animated />
-        <ThemeProvider
-          value={colorScheme === "dark" ? CustomDarkTheme : CustomDefaultTheme}
-        >
-          <WidgetProvider>
-            <GestureHandlerRootView>
+      <StatusBar style="light" animated />
+      <ThemeProvider value={MuseumShowTheme}>
+        <WidgetProvider>
+          <GestureHandlerRootView>
             <Stack>
               {/* Main app with tabs */}
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -95,6 +84,10 @@ export default function RootLayout() {
                 options={{
                   presentation: "modal",
                   title: "Standard Modal",
+                  headerStyle: {
+                    backgroundColor: colors.background,
+                  },
+                  headerTintColor: colors.text,
                 }}
               />
               <Stack.Screen
@@ -105,6 +98,10 @@ export default function RootLayout() {
                   sheetGrabberVisible: true,
                   sheetAllowedDetents: [0.5, 0.8, 1.0],
                   sheetCornerRadius: 20,
+                  headerStyle: {
+                    backgroundColor: colors.background,
+                  },
+                  headerTintColor: colors.text,
                 }}
               />
               <Stack.Screen
@@ -115,10 +112,10 @@ export default function RootLayout() {
                 }}
               />
             </Stack>
-            <SystemBars style={"auto"} />
-            </GestureHandlerRootView>
-          </WidgetProvider>
-        </ThemeProvider>
+            <SystemBars style="light" />
+          </GestureHandlerRootView>
+        </WidgetProvider>
+      </ThemeProvider>
     </>
   );
 }
