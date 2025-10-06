@@ -127,11 +127,11 @@ export default function HomeScreen() {
   const renderHeaderRight = () => (
     <TouchableOpacity
       onPress={() => setShowUploader(!showUploader)}
-      style={commonStyles.headerButton}
+      style={[commonStyles.headerButton, showUploader && styles.activeButton]}
     >
       <IconSymbol 
         name={showUploader ? "xmark" : "plus"} 
-        color={colors.primary} 
+        color={showUploader ? colors.background : colors.primary} 
         size={20}
       />
     </TouchableOpacity>
@@ -139,7 +139,10 @@ export default function HomeScreen() {
 
   const renderHeaderLeft = () => (
     <TouchableOpacity
-      onPress={() => Alert.alert("Museum Show", "Welcome to Museum Show - Upload and monetize your photo albums!")}
+      onPress={() => Alert.alert(
+        "Museum Show", 
+        "Welcome to Museum Show!\n\n📸 Upload photo albums\n💰 Set your prices in RWF\n👥 Let users preview 3 photos\n🔒 They pay to see the full collection\n\nTap the + button to create your first album!"
+      )}
       style={commonStyles.headerButton}
     >
       <IconSymbol
@@ -149,6 +152,10 @@ export default function HomeScreen() {
       />
     </TouchableOpacity>
   );
+
+  const totalRevenue = albums
+    .filter(album => album.isPurchased)
+    .reduce((sum, album) => sum + album.price, 0);
 
   return (
     <>
@@ -182,8 +189,18 @@ export default function HomeScreen() {
             <View style={styles.header}>
               <Text style={styles.title}>Museum Show</Text>
               <Text style={styles.subtitle}>
-                Discover & Purchase Premium Photo Albums
+                Create & Monetize Your Photo Albums
               </Text>
+              
+              {!showUploader && (
+                <TouchableOpacity
+                  style={styles.createAlbumButton}
+                  onPress={() => setShowUploader(true)}
+                >
+                  <IconSymbol name="plus.circle.fill" size={24} color={colors.background} />
+                  <Text style={styles.createAlbumButtonText}>Create New Album</Text>
+                </TouchableOpacity>
+              )}
             </View>
             
             {albums.length === 0 ? (
@@ -191,13 +208,15 @@ export default function HomeScreen() {
                 <IconSymbol name="photo.stack" size={64} color={colors.textSecondary} />
                 <Text style={styles.emptyTitle}>No Albums Yet</Text>
                 <Text style={styles.emptyDescription}>
-                  Create your first photo album to get started
+                  Start by creating your first photo album.{'\n'}
+                  Upload photos, set a price, and start earning!
                 </Text>
                 <TouchableOpacity
                   style={styles.createFirstButton}
                   onPress={() => setShowUploader(true)}
                 >
-                  <Text style={styles.createFirstButtonText}>Create Album</Text>
+                  <IconSymbol name="camera.fill" size={20} color={colors.background} />
+                  <Text style={styles.createFirstButtonText}>Create First Album</Text>
                 </TouchableOpacity>
               </View>
             ) : (
@@ -211,7 +230,7 @@ export default function HomeScreen() {
                     <Text style={styles.statNumber}>
                       {albums.filter(a => a.isPurchased).length}
                     </Text>
-                    <Text style={styles.statLabel}>Purchased</Text>
+                    <Text style={styles.statLabel}>Sold</Text>
                   </View>
                   <View style={styles.statItem}>
                     <Text style={styles.statNumber}>
@@ -219,6 +238,19 @@ export default function HomeScreen() {
                     </Text>
                     <Text style={styles.statLabel}>Photos</Text>
                   </View>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statNumber}>
+                      {totalRevenue.toLocaleString()}
+                    </Text>
+                    <Text style={styles.statLabel}>RWF Earned</Text>
+                  </View>
+                </View>
+                
+                <View style={styles.albumsHeader}>
+                  <Text style={styles.albumsTitle}>Your Albums</Text>
+                  <Text style={styles.albumsSubtitle}>
+                    Users can preview 3 photos before purchasing
+                  </Text>
                 </View>
                 
                 {albums.map((album) => (
@@ -228,6 +260,24 @@ export default function HomeScreen() {
                     onPurchase={handlePurchase}
                   />
                 ))}
+                
+                <View style={styles.howItWorks}>
+                  <Text style={styles.howItWorksTitle}>How It Works:</Text>
+                  <View style={styles.stepContainer}>
+                    <View style={styles.step}>
+                      <Text style={styles.stepNumber}>1</Text>
+                      <Text style={styles.stepText}>Upload photos & set price</Text>
+                    </View>
+                    <View style={styles.step}>
+                      <Text style={styles.stepNumber}>2</Text>
+                      <Text style={styles.stepText}>Users see 3 preview photos</Text>
+                    </View>
+                    <View style={styles.step}>
+                      <Text style={styles.stepNumber}>3</Text>
+                      <Text style={styles.stepText}>They pay to unlock all photos</Text>
+                    </View>
+                  </View>
+                </View>
               </>
             )}
           </ScrollView>
@@ -261,6 +311,23 @@ const styles = StyleSheet.create({
     ...commonStyles.textSecondary,
     textAlign: 'center',
     fontSize: 16,
+    marginBottom: 20,
+  },
+  createAlbumButton: {
+    ...commonStyles.button,
+    backgroundColor: colors.accent,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+  },
+  createAlbumButtonText: {
+    ...commonStyles.buttonText,
+    fontSize: 16,
+  },
+  activeButton: {
+    backgroundColor: colors.primary,
   },
   statsContainer: {
     flexDirection: 'row',
@@ -275,17 +342,32 @@ const styles = StyleSheet.create({
   },
   statItem: {
     alignItems: 'center',
+    flex: 1,
   },
   statNumber: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: colors.accent,
     fontFamily: 'monospace',
   },
   statLabel: {
     ...commonStyles.textSecondary,
-    fontSize: 12,
+    fontSize: 11,
     marginTop: 4,
+    textAlign: 'center',
+  },
+  albumsHeader: {
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  albumsTitle: {
+    ...commonStyles.subtitle,
+    textAlign: 'left',
+    marginBottom: 4,
+  },
+  albumsSubtitle: {
+    ...commonStyles.textSecondary,
+    fontSize: 12,
   },
   emptyState: {
     flex: 1,
@@ -303,14 +385,58 @@ const styles = StyleSheet.create({
     ...commonStyles.textSecondary,
     textAlign: 'center',
     marginBottom: 30,
+    lineHeight: 20,
   },
   createFirstButton: {
     ...commonStyles.button,
     backgroundColor: colors.accent,
     paddingHorizontal: 30,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   createFirstButtonText: {
     ...commonStyles.buttonText,
     fontSize: 16,
+  },
+  howItWorks: {
+    margin: 20,
+    padding: 16,
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  howItWorksTitle: {
+    ...commonStyles.text,
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    color: colors.primary,
+  },
+  stepContainer: {
+    gap: 8,
+  },
+  step: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  stepNumber: {
+    backgroundColor: colors.primary,
+    color: colors.background,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    textAlign: 'center',
+    lineHeight: 24,
+    fontSize: 12,
+    fontWeight: 'bold',
+    fontFamily: 'monospace',
+  },
+  stepText: {
+    ...commonStyles.textSecondary,
+    fontSize: 14,
+    flex: 1,
   },
 });

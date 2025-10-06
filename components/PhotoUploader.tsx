@@ -41,6 +41,14 @@ export default function PhotoUploader({ onAlbumCreate }: PhotoUploaderProps) {
 
   const pickImages = async () => {
     try {
+      // Request permission first
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (permissionResult.granted === false) {
+        Alert.alert('Permission Required', 'Please allow access to your photo library to upload images.');
+        return;
+      }
+
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsMultipleSelection: true,
@@ -57,6 +65,12 @@ export default function PhotoUploader({ onAlbumCreate }: PhotoUploaderProps) {
         
         setPhotos(prev => [...prev, ...newPhotos]);
         console.log(`Added ${newPhotos.length} photos to album`);
+        
+        // Show success message
+        Alert.alert(
+          'Photos Added!', 
+          `Successfully added ${newPhotos.length} photo${newPhotos.length !== 1 ? 's' : ''} to your album.`
+        );
       }
     } catch (error) {
       console.log('Error picking images:', error);
@@ -64,8 +78,55 @@ export default function PhotoUploader({ onAlbumCreate }: PhotoUploaderProps) {
     }
   };
 
+  const takePhoto = async () => {
+    try {
+      // Request camera permission
+      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+      
+      if (permissionResult.granted === false) {
+        Alert.alert('Permission Required', 'Please allow camera access to take photos.');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        const newPhoto: Photo = {
+          id: `photo_${Date.now()}`,
+          uri: result.assets[0].uri,
+          name: `Photo ${photos.length + 1}`,
+        };
+        
+        setPhotos(prev => [...prev, newPhoto]);
+        console.log('Photo taken and added to album');
+        
+        Alert.alert('Photo Added!', 'Your photo has been added to the album.');
+      }
+    } catch (error) {
+      console.log('Error taking photo:', error);
+      Alert.alert('Error', 'Failed to take photo. Please try again.');
+    }
+  };
+
   const removePhoto = (photoId: string) => {
-    setPhotos(prev => prev.filter(photo => photo.id !== photoId));
+    Alert.alert(
+      'Remove Photo',
+      'Are you sure you want to remove this photo?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => {
+            setPhotos(prev => prev.filter(photo => photo.id !== photoId));
+            console.log('Photo removed from album');
+          },
+        },
+      ]
+    );
   };
 
   const updatePhotoName = (photoId: string, newName: string) => {
@@ -74,44 +135,88 @@ export default function PhotoUploader({ onAlbumCreate }: PhotoUploaderProps) {
     ));
   };
 
-  const createAlbum = () => {
+  const createAlbum = async () => {
     if (!albumTitle.trim()) {
-      Alert.alert('Error', 'Please enter an album title');
+      Alert.alert('Missing Title', 'Please enter an album title to continue.');
       return;
     }
     
     if (photos.length < 3) {
-      Alert.alert('Error', 'Please add at least 3 photos to create an album');
+      Alert.alert(
+        'Not Enough Photos', 
+        `You need at least 3 photos to create an album. Please add ${3 - photos.length} more photo${3 - photos.length !== 1 ? 's' : ''}.`
+      );
       return;
     }
     
-    if (!albumPrice.trim() || isNaN(Number(albumPrice))) {
-      Alert.alert('Error', 'Please enter a valid price in RWF');
+    if (!albumPrice.trim() || isNaN(Number(albumPrice)) || Number(albumPrice) <= 0) {
+      Alert.alert('Invalid Price', 'Please enter a valid price in RWF (must be greater than 0).');
       return;
     }
 
-    const album = {
-      title: albumTitle.trim(),
-      description: albumDescription.trim(),
-      photos,
-      price: Number(albumPrice),
-    };
+    setIsUploading(true);
+    
+    try {
+      const album = {
+        title: albumTitle.trim(),
+        description: albumDescription.trim(),
+        photos,
+        price: Number(albumPrice),
+      };
 
-    onAlbumCreate(album);
-    
-    // Reset form
-    setPhotos([]);
-    setAlbumTitle('');
-    setAlbumDescription('');
-    setAlbumPrice('');
-    
-    Alert.alert('Success', 'Album created successfully!');
+      // Simulate upload delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      onAlbumCreate(album);
+      
+      // Reset form
+      setPhotos([]);
+      setAlbumTitle('');
+      setAlbumDescription('');
+      setAlbumPrice('');
+      
+      Alert.alert(
+        'Album Created!', 
+        `"${album.title}" has been successfully created with ${album.photos.length} photos. Users can now purchase it for ${album.price} RWF.`
+      );
+    } catch (error) {
+      console.log('Error creating album:', error);
+      Alert.alert('Error', 'Failed to create album. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const clearAll = () => {
+    Alert.alert(
+      'Clear All',
+      'Are you sure you want to clear all photos and form data?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear All',
+          style: 'destructive',
+          onPress: () => {
+            setPhotos([]);
+            setAlbumTitle('');
+            setAlbumDescription('');
+            setAlbumPrice('');
+            console.log('Form cleared');
+          },
+        },
+      ]
+    );
   };
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.content}>
-        <Text style={styles.title}>Create Photo Album</Text>
+        <View style={styles.header}>
+          <Text style={styles.title}>Create Photo Album</Text>
+          <Text style={styles.subtitle}>
+            Upload photos and set a price for users to access your collection
+          </Text>
+        </View>
         
         <View style={styles.formSection}>
           <Text style={styles.label}>Album Title *</Text>
@@ -119,9 +224,11 @@ export default function PhotoUploader({ onAlbumCreate }: PhotoUploaderProps) {
             style={styles.input}
             value={albumTitle}
             onChangeText={setAlbumTitle}
-            placeholder="Enter album title..."
+            placeholder="Enter a catchy album title..."
             placeholderTextColor={colors.textSecondary}
+            maxLength={50}
           />
+          <Text style={styles.charCount}>{albumTitle.length}/50</Text>
         </View>
         
         <View style={styles.formSection}>
@@ -130,11 +237,13 @@ export default function PhotoUploader({ onAlbumCreate }: PhotoUploaderProps) {
             style={[styles.input, styles.textArea]}
             value={albumDescription}
             onChangeText={setAlbumDescription}
-            placeholder="Describe your photo album..."
+            placeholder="Describe what makes this album special..."
             placeholderTextColor={colors.textSecondary}
             multiline
             numberOfLines={3}
+            maxLength={200}
           />
+          <Text style={styles.charCount}>{albumDescription.length}/200</Text>
         </View>
         
         <View style={styles.formSection}>
@@ -143,50 +252,82 @@ export default function PhotoUploader({ onAlbumCreate }: PhotoUploaderProps) {
             style={styles.input}
             value={albumPrice}
             onChangeText={setAlbumPrice}
-            placeholder="Enter price in Rwandan Francs..."
+            placeholder="Enter price in Rwandan Francs (e.g., 5000)..."
             placeholderTextColor={colors.textSecondary}
             keyboardType="numeric"
           />
-        </View>
-        
-        <View style={styles.photoSection}>
-          <Text style={styles.label}>Photos ({photos.length})</Text>
-          
-          <TouchableOpacity style={styles.uploadButton} onPress={pickImages}>
-            <IconSymbol name="plus.circle.fill" size={24} color={colors.background} />
-            <Text style={styles.uploadButtonText}>Add Photos</Text>
-          </TouchableOpacity>
-          
-          {photos.length > 0 && (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoScroll}>
-              {photos.map((photo, index) => (
-                <View key={photo.id} style={styles.photoItem}>
-                  <Image source={{ uri: photo.uri }} style={styles.photoPreview} />
-                  <TextInput
-                    style={styles.photoNameInput}
-                    value={photo.name}
-                    onChangeText={(text) => updatePhotoName(photo.id, text)}
-                    placeholder="Photo name..."
-                    placeholderTextColor={colors.textSecondary}
-                  />
-                  <TouchableOpacity
-                    style={styles.removeButton}
-                    onPress={() => removePhoto(photo.id)}
-                  >
-                    <IconSymbol name="xmark.circle.fill" size={20} color={colors.accent} />
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </ScrollView>
+          {albumPrice && !isNaN(Number(albumPrice)) && Number(albumPrice) > 0 && (
+            <Text style={styles.pricePreview}>
+              Users will pay {Number(albumPrice).toLocaleString()} RWF to access all photos
+            </Text>
           )}
         </View>
         
-        {photos.length >= 3 && (
+        <View style={styles.photoSection}>
+          <Text style={styles.label}>
+            Photos ({photos.length}) {photos.length >= 3 ? '✓' : `- Need ${3 - photos.length} more`}
+          </Text>
+          
+          <View style={styles.uploadButtons}>
+            <TouchableOpacity style={styles.uploadButton} onPress={pickImages}>
+              <IconSymbol name="photo.stack" size={24} color={colors.background} />
+              <Text style={styles.uploadButtonText}>Choose from Gallery</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={[styles.uploadButton, styles.cameraButton]} onPress={takePhoto}>
+              <IconSymbol name="camera.fill" size={24} color={colors.background} />
+              <Text style={styles.uploadButtonText}>Take Photo</Text>
+            </TouchableOpacity>
+          </View>
+          
+          {photos.length > 0 && (
+            <>
+              <View style={styles.photoHeader}>
+                <Text style={styles.photoCount}>
+                  {photos.length} photo{photos.length !== 1 ? 's' : ''} added
+                </Text>
+                <TouchableOpacity onPress={clearAll} style={styles.clearButton}>
+                  <Text style={styles.clearButtonText}>Clear All</Text>
+                </TouchableOpacity>
+              </View>
+              
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoScroll}>
+                {photos.map((photo, index) => (
+                  <View key={photo.id} style={styles.photoItem}>
+                    <Image source={{ uri: photo.uri }} style={styles.photoPreview} />
+                    <TextInput
+                      style={styles.photoNameInput}
+                      value={photo.name}
+                      onChangeText={(text) => updatePhotoName(photo.id, text)}
+                      placeholder="Photo name..."
+                      placeholderTextColor={colors.textSecondary}
+                      maxLength={30}
+                    />
+                    <TouchableOpacity
+                      style={styles.removeButton}
+                      onPress={() => removePhoto(photo.id)}
+                    >
+                      <IconSymbol name="xmark.circle.fill" size={20} color={colors.accent} />
+                    </TouchableOpacity>
+                    <Text style={styles.photoIndex}>{index + 1}</Text>
+                  </View>
+                ))}
+              </ScrollView>
+            </>
+          )}
+        </View>
+        
+        {photos.length >= 3 && albumTitle.trim() && albumPrice.trim() && (
           <TouchableOpacity
             style={[styles.createButton, isUploading && styles.disabledButton]}
             onPress={createAlbum}
             disabled={isUploading}
           >
+            <IconSymbol 
+              name={isUploading ? "arrow.clockwise" : "checkmark.circle.fill"} 
+              size={20} 
+              color={colors.background} 
+            />
             <Text style={styles.createButtonText}>
               {isUploading ? 'Creating Album...' : 'Create Album'}
             </Text>
@@ -194,10 +335,21 @@ export default function PhotoUploader({ onAlbumCreate }: PhotoUploaderProps) {
         )}
         
         {photos.length > 0 && photos.length < 3 && (
-          <Text style={styles.warningText}>
-            Add at least {3 - photos.length} more photo{3 - photos.length !== 1 ? 's' : ''} to create an album
-          </Text>
+          <View style={styles.warningContainer}>
+            <IconSymbol name="exclamationmark.triangle.fill" size={20} color={colors.accent} />
+            <Text style={styles.warningText}>
+              Add at least {3 - photos.length} more photo{3 - photos.length !== 1 ? 's' : ''} to create an album
+            </Text>
+          </View>
         )}
+        
+        <View style={styles.helpSection}>
+          <Text style={styles.helpTitle}>Tips for Great Albums:</Text>
+          <Text style={styles.helpText}>• Use high-quality images for better sales</Text>
+          <Text style={styles.helpText}>• Write descriptive names for each photo</Text>
+          <Text style={styles.helpText}>• Set competitive prices (typical range: 2000-10000 RWF)</Text>
+          <Text style={styles.helpText}>• Users see 3 preview photos before purchasing</Text>
+        </View>
       </View>
     </ScrollView>
   );
@@ -210,11 +362,20 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
-    paddingBottom: 100, // Extra space for floating tab bar
+    paddingBottom: 120, // Extra space for floating tab bar
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 30,
   },
   title: {
     ...commonStyles.title,
-    marginBottom: 30,
+    marginBottom: 8,
+  },
+  subtitle: {
+    ...commonStyles.textSecondary,
+    textAlign: 'center',
+    fontSize: 14,
   },
   formSection: {
     marginBottom: 20,
@@ -227,24 +388,66 @@ const styles = StyleSheet.create({
   },
   input: {
     ...commonStyles.input,
+    marginVertical: 0,
   },
   textArea: {
     height: 80,
     textAlignVertical: 'top',
   },
+  charCount: {
+    ...commonStyles.textSecondary,
+    fontSize: 12,
+    textAlign: 'right',
+    marginTop: 4,
+  },
+  pricePreview: {
+    ...commonStyles.textSecondary,
+    fontSize: 12,
+    marginTop: 4,
+    color: colors.accent,
+  },
   photoSection: {
     marginBottom: 30,
   },
+  uploadButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
   uploadButton: {
     ...commonStyles.button,
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginBottom: 16,
+    marginVertical: 0,
+  },
+  cameraButton: {
+    backgroundColor: colors.secondary,
   },
   uploadButtonText: {
     ...commonStyles.buttonText,
+    fontSize: 14,
+  },
+  photoHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  photoCount: {
+    ...commonStyles.text,
+    fontSize: 14,
+    color: colors.accent,
+  },
+  clearButton: {
+    padding: 8,
+  },
+  clearButtonText: {
+    ...commonStyles.textSecondary,
+    fontSize: 12,
+    textDecorationLine: 'underline',
   },
   photoScroll: {
     marginVertical: 12,
@@ -267,6 +470,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     padding: 6,
     marginTop: 4,
+    marginVertical: 0,
     textAlign: 'center',
   },
   removeButton: {
@@ -276,10 +480,27 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     borderRadius: 10,
   },
+  photoIndex: {
+    position: 'absolute',
+    top: 4,
+    left: 4,
+    backgroundColor: colors.background,
+    color: colors.accent,
+    fontSize: 10,
+    fontWeight: 'bold',
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 4,
+    fontFamily: 'monospace',
+  },
   createButton: {
     ...commonStyles.button,
     backgroundColor: colors.accent,
     paddingVertical: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
   createButtonText: {
     ...commonStyles.buttonText,
@@ -288,10 +509,41 @@ const styles = StyleSheet.create({
   disabledButton: {
     opacity: 0.6,
   },
+  warningContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: colors.card,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.accent,
+  },
   warningText: {
     ...commonStyles.textSecondary,
-    textAlign: 'center',
     fontStyle: 'italic',
-    marginTop: 16,
+    flex: 1,
+  },
+  helpSection: {
+    marginTop: 30,
+    padding: 16,
+    backgroundColor: colors.card,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  helpTitle: {
+    ...commonStyles.text,
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: colors.primary,
+  },
+  helpText: {
+    ...commonStyles.textSecondary,
+    fontSize: 12,
+    marginBottom: 4,
   },
 });
