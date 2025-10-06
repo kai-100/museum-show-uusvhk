@@ -29,14 +29,19 @@ interface PhotoUploaderProps {
     description: string;
     photos: Photo[];
     price: number;
+    owner: string;
   }) => void;
 }
+
+const ALBUM_OWNERS = ['Allan', 'Ganza', 'Paci', 'Beda', 'Sanyu', 'Other'];
 
 export default function PhotoUploader({ onAlbumCreate }: PhotoUploaderProps) {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [albumTitle, setAlbumTitle] = useState('');
   const [albumDescription, setAlbumDescription] = useState('');
   const [albumPrice, setAlbumPrice] = useState('');
+  const [albumOwner, setAlbumOwner] = useState('');
+  const [customOwner, setCustomOwner] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 
   const pickImages = async () => {
@@ -140,6 +145,16 @@ export default function PhotoUploader({ onAlbumCreate }: PhotoUploaderProps) {
       Alert.alert('Missing Title', 'Please enter an album title to continue.');
       return;
     }
+
+    if (!albumOwner) {
+      Alert.alert('Missing Owner', 'Please select who this album belongs to.');
+      return;
+    }
+
+    if (albumOwner === 'Other' && !customOwner.trim()) {
+      Alert.alert('Missing Owner Name', 'Please enter the owner\'s name.');
+      return;
+    }
     
     if (photos.length < 3) {
       Alert.alert(
@@ -157,11 +172,14 @@ export default function PhotoUploader({ onAlbumCreate }: PhotoUploaderProps) {
     setIsUploading(true);
     
     try {
+      const finalOwner = albumOwner === 'Other' ? customOwner.trim() : albumOwner;
+      
       const album = {
         title: albumTitle.trim(),
         description: albumDescription.trim(),
         photos,
         price: Number(albumPrice),
+        owner: finalOwner,
       };
 
       // Simulate upload delay for better UX
@@ -174,10 +192,12 @@ export default function PhotoUploader({ onAlbumCreate }: PhotoUploaderProps) {
       setAlbumTitle('');
       setAlbumDescription('');
       setAlbumPrice('');
+      setAlbumOwner('');
+      setCustomOwner('');
       
       Alert.alert(
         'Album Created!', 
-        `"${album.title}" has been successfully created with ${album.photos.length} photos. Users can now purchase it for ${album.price} RWF.`
+        `"${album.title}" has been successfully created for ${finalOwner} with ${album.photos.length} photos. Users can preview 2 photos and pay ${album.price} RWF for full access.`
       );
     } catch (error) {
       console.log('Error creating album:', error);
@@ -201,6 +221,8 @@ export default function PhotoUploader({ onAlbumCreate }: PhotoUploaderProps) {
             setAlbumTitle('');
             setAlbumDescription('');
             setAlbumPrice('');
+            setAlbumOwner('');
+            setCustomOwner('');
             console.log('Form cleared');
           },
         },
@@ -214,8 +236,42 @@ export default function PhotoUploader({ onAlbumCreate }: PhotoUploaderProps) {
         <View style={styles.header}>
           <Text style={styles.title}>Create Photo Album</Text>
           <Text style={styles.subtitle}>
-            Upload photos and set a price for users to access your collection
+            Upload photos and set a price for users to access the collection
           </Text>
+        </View>
+
+        <View style={styles.formSection}>
+          <Text style={styles.label}>Album Owner *</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.ownerScroll}>
+            {ALBUM_OWNERS.map((owner) => (
+              <TouchableOpacity
+                key={owner}
+                style={[
+                  styles.ownerButton,
+                  albumOwner === owner && styles.ownerButtonSelected
+                ]}
+                onPress={() => setAlbumOwner(owner)}
+              >
+                <Text style={[
+                  styles.ownerButtonText,
+                  albumOwner === owner && styles.ownerButtonTextSelected
+                ]}>
+                  {owner}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+          
+          {albumOwner === 'Other' && (
+            <TextInput
+              style={styles.input}
+              value={customOwner}
+              onChangeText={setCustomOwner}
+              placeholder="Enter owner's name..."
+              placeholderTextColor={colors.textSecondary}
+              maxLength={30}
+            />
+          )}
         </View>
         
         <View style={styles.formSection}>
@@ -252,7 +308,7 @@ export default function PhotoUploader({ onAlbumCreate }: PhotoUploaderProps) {
             style={styles.input}
             value={albumPrice}
             onChangeText={setAlbumPrice}
-            placeholder="Enter price in Rwandan Francs (e.g., 5000)..."
+            placeholder="Enter price in Rwandan Francs (e.g., 3000)..."
             placeholderTextColor={colors.textSecondary}
             keyboardType="numeric"
           />
@@ -309,7 +365,12 @@ export default function PhotoUploader({ onAlbumCreate }: PhotoUploaderProps) {
                     >
                       <IconSymbol name="xmark.circle.fill" size={20} color={colors.accent} />
                     </TouchableOpacity>
-                    <Text style={styles.photoIndex}>{index + 1}</Text>
+                    <View style={styles.photoIndexContainer}>
+                      <Text style={styles.photoIndex}>{index + 1}</Text>
+                      {index < 2 && (
+                        <Text style={styles.freeLabel}>FREE</Text>
+                      )}
+                    </View>
                   </View>
                 ))}
               </ScrollView>
@@ -317,7 +378,8 @@ export default function PhotoUploader({ onAlbumCreate }: PhotoUploaderProps) {
           )}
         </View>
         
-        {photos.length >= 3 && albumTitle.trim() && albumPrice.trim() && (
+        {photos.length >= 3 && albumTitle.trim() && albumPrice.trim() && albumOwner && 
+         (albumOwner !== 'Other' || customOwner.trim()) && (
           <TouchableOpacity
             style={[styles.createButton, isUploading && styles.disabledButton]}
             onPress={createAlbum}
@@ -345,10 +407,11 @@ export default function PhotoUploader({ onAlbumCreate }: PhotoUploaderProps) {
         
         <View style={styles.helpSection}>
           <Text style={styles.helpTitle}>Tips for Great Albums:</Text>
+          <Text style={styles.helpText}>• Select the correct album owner</Text>
           <Text style={styles.helpText}>• Use high-quality images for better sales</Text>
           <Text style={styles.helpText}>• Write descriptive names for each photo</Text>
-          <Text style={styles.helpText}>• Set competitive prices (typical range: 2000-10000 RWF)</Text>
-          <Text style={styles.helpText}>• Users see 3 preview photos before purchasing</Text>
+          <Text style={styles.helpText}>• Set competitive prices (typical range: 2000-5000 RWF)</Text>
+          <Text style={styles.helpText}>• Users see 2 preview photos before purchasing</Text>
         </View>
       </View>
     </ScrollView>
@@ -385,6 +448,29 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     marginBottom: 8,
+  },
+  ownerScroll: {
+    marginBottom: 8,
+  },
+  ownerButton: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 8,
+  },
+  ownerButtonSelected: {
+    backgroundColor: colors.primary,
+  },
+  ownerButtonText: {
+    ...commonStyles.textSecondary,
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  ownerButtonTextSelected: {
+    color: colors.background,
   },
   input: {
     ...commonStyles.input,
@@ -480,10 +566,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     borderRadius: 10,
   },
-  photoIndex: {
+  photoIndexContainer: {
     position: 'absolute',
     top: 4,
     left: 4,
+    alignItems: 'center',
+  },
+  photoIndex: {
     backgroundColor: colors.background,
     color: colors.accent,
     fontSize: 10,
@@ -492,6 +581,17 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 4,
     fontFamily: 'monospace',
+  },
+  freeLabel: {
+    backgroundColor: colors.accent,
+    color: colors.background,
+    fontSize: 8,
+    fontWeight: 'bold',
+    paddingHorizontal: 3,
+    paddingVertical: 1,
+    borderRadius: 3,
+    fontFamily: 'monospace',
+    marginTop: 2,
   },
   createButton: {
     ...commonStyles.button,
