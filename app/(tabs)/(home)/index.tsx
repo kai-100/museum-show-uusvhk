@@ -8,12 +8,14 @@ import {
   Text, 
   TouchableOpacity,
   Platform,
-  Alert 
+  Alert,
+  Modal 
 } from "react-native";
 import { IconSymbol } from "@/components/IconSymbol";
 import { colors, commonStyles } from "@/styles/commonStyles";
 import PhotoAlbum from "@/components/PhotoAlbum";
 import PhotoUploader from "@/components/PhotoUploader";
+import WebUploadGuide from "@/components/WebUploadGuide";
 
 interface Album {
   id: string;
@@ -229,6 +231,7 @@ export default function HomeScreen() {
   ]);
   
   const [showUploader, setShowUploader] = useState(false);
+  const [showWebGuide, setShowWebGuide] = useState(false);
 
   const handleAlbumCreate = (newAlbum: Omit<Album, 'id' | 'isPurchased' | 'owner'>) => {
     const album: Album = {
@@ -261,14 +264,32 @@ export default function HomeScreen() {
     console.log('Album purchased:', albumId, 'Owner:', album.owner);
   };
 
+  const showUploadOptions = () => {
+    Alert.alert(
+      'Upload Options',
+      'Choose how you want to add photos to Museum Show:',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Mobile Upload',
+          onPress: () => setShowUploader(true)
+        },
+        {
+          text: 'PC Folder Upload Guide',
+          onPress: () => setShowWebGuide(true)
+        }
+      ]
+    );
+  };
+
   const renderHeaderRight = () => (
     <TouchableOpacity
-      onPress={() => setShowUploader(!showUploader)}
-      style={[commonStyles.headerButton, showUploader && styles.activeButton]}
+      onPress={showUploadOptions}
+      style={[commonStyles.headerButton, (showUploader || showWebGuide) && styles.activeButton]}
     >
       <IconSymbol 
-        name={showUploader ? "xmark" : "plus"} 
-        color={showUploader ? colors.background : colors.primary} 
+        name={(showUploader || showWebGuide) ? "xmark" : "plus"} 
+        color={(showUploader || showWebGuide) ? colors.background : colors.primary} 
         size={20}
       />
     </TouchableOpacity>
@@ -278,7 +299,7 @@ export default function HomeScreen() {
     <TouchableOpacity
       onPress={() => Alert.alert(
         "Museum Show", 
-        "Welcome to Museum Show!\n\n👥 Browse personal photo albums\n💰 Prices in RWF\n👀 Preview 2 photos for free\n🔒 Pay to unlock full collections\n\nEach person has their own exclusive album!"
+        "Welcome to Museum Show!\n\n👥 Browse personal photo albums\n💰 Prices in RWF\n👀 Preview 2 photos for free\n🔒 Pay to unlock full collections\n📁 Upload from mobile or PC\n\nEach person has their own exclusive album!"
       )}
       style={commonStyles.headerButton}
     >
@@ -296,6 +317,111 @@ export default function HomeScreen() {
 
   const totalPhotos = albums.reduce((sum, album) => sum + album.photos.length, 0);
   const soldAlbums = albums.filter(a => a.isPurchased).length;
+
+  const renderContent = () => {
+    if (showWebGuide) {
+      return <WebUploadGuide />;
+    }
+    
+    if (showUploader) {
+      return <PhotoUploader onAlbumCreate={handleAlbumCreate} />;
+    }
+
+    return (
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <Text style={styles.title}>Museum Show</Text>
+          <Text style={styles.subtitle}>
+            Personal Photo Collections
+          </Text>
+          <Text style={styles.description}>
+            Explore exclusive albums from Allan, Ganza, Paci, Beda & Sanyu
+          </Text>
+        </View>
+        
+        <View style={styles.statsContainer}>
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>{albums.length}</Text>
+            <Text style={styles.statLabel}>Albums</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>{soldAlbums}</Text>
+            <Text style={styles.statLabel}>Purchased</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>{totalPhotos}</Text>
+            <Text style={styles.statLabel}>Total Photos</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>
+              {totalRevenue.toLocaleString()}
+            </Text>
+            <Text style={styles.statLabel}>RWF Earned</Text>
+          </View>
+        </View>
+
+        <View style={styles.uploadOptionsContainer}>
+          <Text style={styles.uploadOptionsTitle}>📁 Upload Methods</Text>
+          <View style={styles.uploadOptionsButtons}>
+            <TouchableOpacity
+              style={styles.uploadOptionButton}
+              onPress={() => setShowUploader(true)}
+            >
+              <IconSymbol name="iphone" size={24} color={colors.primary} />
+              <Text style={styles.uploadOptionText}>Mobile Upload</Text>
+              <Text style={styles.uploadOptionSubtext}>Select from device</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.uploadOptionButton}
+              onPress={() => setShowWebGuide(true)}
+            >
+              <IconSymbol name="folder.badge.plus" size={24} color={colors.accent} />
+              <Text style={styles.uploadOptionText}>PC Folder Upload</Text>
+              <Text style={styles.uploadOptionSubtext}>Web interface guide</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        
+        <View style={styles.albumsHeader}>
+          <Text style={styles.albumsTitle}>Personal Collections</Text>
+          <Text style={styles.albumsSubtitle}>
+            Preview 2 photos free • Pay to unlock full album
+          </Text>
+        </View>
+        
+        {albums.map((album) => (
+          <PhotoAlbum
+            key={album.id}
+            album={album}
+            onPurchase={handlePurchase}
+          />
+        ))}
+        
+        <View style={styles.howItWorks}>
+          <Text style={styles.howItWorksTitle}>How It Works:</Text>
+          <View style={styles.stepContainer}>
+            <View style={styles.step}>
+              <Text style={styles.stepNumber}>1</Text>
+              <Text style={styles.stepText}>Browse personal albums by name</Text>
+            </View>
+            <View style={styles.step}>
+              <Text style={styles.stepNumber}>2</Text>
+              <Text style={styles.stepText}>View 2 preview photos for free</Text>
+            </View>
+            <View style={styles.step}>
+              <Text style={styles.stepNumber}>3</Text>
+              <Text style={styles.stepText}>Pay to unlock all photos in the album</Text>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+    );
+  };
 
   return (
     <>
@@ -318,88 +444,20 @@ export default function HomeScreen() {
       )}
       
       <View style={styles.container}>
-        {showUploader ? (
-          <PhotoUploader onAlbumCreate={handleAlbumCreate} />
-        ) : (
-          <ScrollView 
-            style={styles.scrollView}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
+        {renderContent()}
+        
+        {/* Back button for web guide and uploader */}
+        {(showWebGuide || showUploader) && (
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => {
+              setShowWebGuide(false);
+              setShowUploader(false);
+            }}
           >
-            <View style={styles.header}>
-              <Text style={styles.title}>Museum Show</Text>
-              <Text style={styles.subtitle}>
-                Personal Photo Collections
-              </Text>
-              <Text style={styles.description}>
-                Explore exclusive albums from Allan, Ganza, Paci, Beda & Sanyu
-              </Text>
-            </View>
-            
-            <View style={styles.statsContainer}>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{albums.length}</Text>
-                <Text style={styles.statLabel}>Albums</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{soldAlbums}</Text>
-                <Text style={styles.statLabel}>Purchased</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{totalPhotos}</Text>
-                <Text style={styles.statLabel}>Total Photos</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>
-                  {totalRevenue.toLocaleString()}
-                </Text>
-                <Text style={styles.statLabel}>RWF Earned</Text>
-              </View>
-            </View>
-            
-            <View style={styles.albumsHeader}>
-              <Text style={styles.albumsTitle}>Personal Collections</Text>
-              <Text style={styles.albumsSubtitle}>
-                Preview 2 photos free • Pay to unlock full album
-              </Text>
-            </View>
-            
-            {albums.map((album) => (
-              <PhotoAlbum
-                key={album.id}
-                album={album}
-                onPurchase={handlePurchase}
-              />
-            ))}
-            
-            <View style={styles.howItWorks}>
-              <Text style={styles.howItWorksTitle}>How It Works:</Text>
-              <View style={styles.stepContainer}>
-                <View style={styles.step}>
-                  <Text style={styles.stepNumber}>1</Text>
-                  <Text style={styles.stepText}>Browse personal albums by name</Text>
-                </View>
-                <View style={styles.step}>
-                  <Text style={styles.stepNumber}>2</Text>
-                  <Text style={styles.stepText}>View 2 preview photos for free</Text>
-                </View>
-                <View style={styles.step}>
-                  <Text style={styles.stepNumber}>3</Text>
-                  <Text style={styles.stepText}>Pay to unlock all photos in the album</Text>
-                </View>
-              </View>
-            </View>
-
-            {!showUploader && (
-              <TouchableOpacity
-                style={styles.createAlbumButton}
-                onPress={() => setShowUploader(true)}
-              >
-                <IconSymbol name="plus.circle.fill" size={24} color={colors.background} />
-                <Text style={styles.createAlbumButtonText}>Add New Album</Text>
-              </TouchableOpacity>
-            )}
-          </ScrollView>
+            <IconSymbol name="arrow.left.circle.fill" size={24} color={colors.primary} />
+            <Text style={styles.backButtonText}>Back to Albums</Text>
+          </TouchableOpacity>
         )}
       </View>
     </>
@@ -440,21 +498,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 20,
   },
-  createAlbumButton: {
-    ...commonStyles.button,
-    backgroundColor: colors.accent,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    marginHorizontal: 20,
-    marginTop: 20,
-  },
-  createAlbumButtonText: {
-    ...commonStyles.buttonText,
-    fontSize: 16,
-  },
   activeButton: {
     backgroundColor: colors.primary,
   },
@@ -482,6 +525,48 @@ const styles = StyleSheet.create({
   statLabel: {
     ...commonStyles.textSecondary,
     fontSize: 11,
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  uploadOptionsContainer: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 2,
+    borderColor: colors.accent,
+  },
+  uploadOptionsTitle: {
+    ...commonStyles.text,
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    color: colors.accent,
+  },
+  uploadOptionsButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  uploadOptionButton: {
+    flex: 1,
+    backgroundColor: colors.background,
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  uploadOptionText: {
+    ...commonStyles.text,
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  uploadOptionSubtext: {
+    ...commonStyles.textSecondary,
+    fontSize: 10,
     marginTop: 4,
     textAlign: 'center',
   },
@@ -537,5 +622,27 @@ const styles = StyleSheet.create({
     ...commonStyles.textSecondary,
     fontSize: 14,
     flex: 1,
+  },
+  backButton: {
+    position: 'absolute',
+    bottom: 100,
+    left: 20,
+    right: 20,
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    boxShadow: '0px 4px 8px rgba(0, 255, 0, 0.3)',
+    elevation: 6,
+  },
+  backButtonText: {
+    ...commonStyles.text,
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
